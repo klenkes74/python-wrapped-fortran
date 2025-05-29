@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "python-wrapped-fortran"
+version = "1.0.0"
+description = "Wrapping a fortran executable as microservice with REST interface"
+authors = ["klenkes74 <rlichti@kaiserpfalz-edv.de>"]
+license = "Apache License 2.0"
+readme = "README.md"
+packages = [{include = "python"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flask = "^3.1.1"
+gunicorn = "^23.0.0"
+python-json-logger = "^3.3.0"
+opentelemetry-api = "^1.33.1"
+opentelemetry-sdk = "^1.33.1"
+opentelemetry-instrumentation-flask = "^0.54b1"
+prometheus-client = "^0.22.0"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-cov = "^6.1.1"
+black = "^25.1.0"
+isort = "^6.0.1"
+flake8 = "^7.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
