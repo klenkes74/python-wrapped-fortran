@@ -1,5 +1,6 @@
 from flask import Flask
 from python.api.routes import register_routes
+from python.api.actuator import register_actuator
 from python.logging_config import setup_logger, extract_trace_context
 from python.telemetry import configure_telemetry
 from python.metrics import configure_metrics
@@ -21,6 +22,9 @@ def create_app():
 
     # API-Routen registrieren
     register_routes(app)
+
+    # Actuator-Routen registrieren
+    register_actuator(app)
 
     return app
 

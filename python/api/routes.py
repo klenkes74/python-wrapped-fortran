@@ -37,35 +37,10 @@ def register_routes(app):
                 "/sub": "Subtraktion zweier Zahlen (GET, Parameter: a, b)",
                 "/mul": "Multiplikation zweier Zahlen (GET, Parameter: a, b)",
                 "/div": "Division zweier Zahlen (GET, Parameter: a, b)",
-                "/api/health": "k8s health check",
-                "/metrics": "Prometheus-Metriken abrufen (wenn aktiviert)"
 
                 # end::[]"
             }
         })
-
-    @app.route('/api/health')
-    def health_check():
-        trace_id, span_id, parent_span_id = extract_trace_context()
-
-        # Log-Eintrag mit Trace-Kontext
-        log_extra = {'trace_id': trace_id, 'span_id': span_id, 'parent_span_id': parent_span_id}
-        logger.info("Gesundheitscheck durchgeführt", extra=log_extra)
-
-        response = jsonify({
-            "status": "healthy",
-            "trace_id": trace_id,
-            "span_id": span_id,
-            "parent_span_id": parent_span_id
-        })
-
-        # Tracing-Header zur Antwort hinzufügen
-        response.headers['traceparent'] = f'00-{trace_id}-{span_id}-01'
-        response.headers['X-Trace-Id'] = trace_id
-        response.headers['X-Span-Id'] = span_id
-        response.headers['X-Parent-Span-Id'] = parent_span_id
-
-        return response
 
     def calculate(operation):
         """
@@ -92,7 +67,8 @@ def register_routes(app):
                     response[0].headers['traceparent'] = f'00-{trace_id}-{span_id}-01'
                     response[0].headers['X-Trace-Id'] = trace_id
                     response[0].headers['X-Span-Id'] = span_id
-                    response[0].headers['X-Parent-Span-Id'] = parent_span_id
+                    if parent_span_id != 'unset':
+                        response[0].headers['X-Parent-Span-Id'] = parent_span_id
                 return response
 
             logger.info(f"{operation}-Operation gestartet mit a={a}, b={b}", extra=log_extra)
@@ -124,7 +100,8 @@ def register_routes(app):
                     response[0].headers['traceparent'] = f'00-{trace_id}-{span_id}-01'
                     response[0].headers['X-Trace-Id'] = trace_id
                     response[0].headers['X-Span-Id'] = span_id
-                    response[0].headers['X-Parent-Span-Id'] = parent_span_id
+                    if parent_span_id != 'unset':
+                        response[0].headers['X-Parent-Span-Id'] = parent_span_id
                 return response
 
             # Ausgabe des Fortran-Programms parsen
@@ -143,7 +120,8 @@ def register_routes(app):
             response.headers['traceparent'] = f'00-{trace_id}-{span_id}-01'
             response.headers['X-Trace-Id'] = trace_id
             response.headers['X-Span-Id'] = span_id
-            response.headers['X-Parent-Span-Id'] = parent_span_id
+            if parent_span_id != 'unset':
+                response[0].headers['X-Parent-Span-Id'] = parent_span_id
 
             return response
 
@@ -159,7 +137,8 @@ def register_routes(app):
                 response[0].headers['traceparent'] = f'00-{trace_id}-{span_id}-01'
                 response[0].headers['X-Trace-Id'] = trace_id
                 response[0].headers['X-Span-Id'] = span_id
-                response[0].headers['X-Parent-Span-Id'] = parent_span_id
+                if parent_span_id != 'unset':
+                    response[0].headers['X-Parent-Span-Id'] = parent_span_id
             return response
 
     # Endpunkte für die verschiedenen Operationen
@@ -182,39 +161,5 @@ def register_routes(app):
     @track_request_metrics
     def divide():
         return calculate("div")
-
-    @app.route('/metrics', methods=['GET'])
-    def metrics():
-        from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-        try:
-            ENABLE_PROMETHEUS = os.environ.get('ENABLE_PROMETHEUS', True)
-            if not ENABLE_PROMETHEUS:
-                return jsonify({"error": "Prometheus-Metriken sind deaktiviert"}), 503
-
-            output = generate_latest(metrics_registry)
-
-        except Exception as e:
-            return jsonify({"error": "Fehler beim Abrufen der Metriken: {str(e)}"}), 500
-
-        return output, 200, {'Content-Type': CONTENT_TYPE_LATEST}
-
-    @app.route('/debug', methods=['GET'])
-    def debug():
-        """
-        Debug-Endpoint, um den aktuellen Zustand der Anwendung zu überprüfen
-        """
-        trace_id, span_id, parent_span_id = extract_trace_context()
-        logger.info("Debug-Informationen abgerufen", extra={'trace_id': trace_id, 'span_id': span_id, 'parent_span_id': parent_span_id})
-
-        debug_info = {
-            "trace_id": trace_id,
-            "span_id": span_id,
-            "parent_span_id": parent_span_id,
-            "environment": dict(os.environ),
-            "python_version": os.sys.version,
-            "hostname": os.uname().nodename
-        }
-
-        return jsonify(debug_info)
 
     return app
